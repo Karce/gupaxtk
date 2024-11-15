@@ -36,6 +36,9 @@ use crate::miscs::clean_dir;
 use crate::utils::*;
 use clap::Parser;
 use egui::Vec2;
+use gtk::prelude::*;
+use gtk::{glib, Application, ApplicationWindow};
+use gtk::Button;
 use log::info;
 use log::warn;
 use std::time::Instant;
@@ -53,51 +56,89 @@ mod utils;
 #[cfg(target_family = "unix")]
 extern crate sudo as sudo_check;
 
-//---------------------------------------------------------------------------------------------------- Main [App] frame
-fn main() {
-    let args = Cli::parse();
-    let now = Instant::now();
+// //---------------------------------------------------------------------------------------------------- Main [App] frame
+// fn main() {
+//     let args = Cli::parse();
+//     let now = Instant::now();
 
-    // Set custom panic hook.
-    crate::panic::set_panic_hook(now);
+//     // Set custom panic hook.
+//     crate::panic::set_panic_hook(now);
 
-    // Init logger.
-    init_logger(now, args.logfile);
-    let mut app = App::new(now, args);
-    init_auto(&mut app);
+//     // Init logger.
+//     init_logger(now, args.logfile);
+//     let mut app = App::new(now, args);
+//     init_auto(&mut app);
 
-    // Init GUI stuff.
-    let selected_width = app.state.gupax.selected_width as f32;
-    let selected_height = app.state.gupax.selected_height as f32;
-    let initial_window_size = if selected_width > APP_MAX_WIDTH || selected_height > APP_MAX_HEIGHT
-    {
-        warn!("App | Set width or height was greater than the maximum! Starting with the default resolution...");
-        Some(Vec2::new(APP_DEFAULT_WIDTH, APP_DEFAULT_HEIGHT))
-    } else {
-        Some(Vec2::new(
-            app.state.gupax.selected_width as f32,
-            app.state.gupax.selected_height as f32,
-        ))
-    };
-    let options = init_options(initial_window_size);
+//     // Init GUI stuff.
+//     let selected_width = app.state.gupax.selected_width as f32;
+//     let selected_height = app.state.gupax.selected_height as f32;
+//     let initial_window_size = if selected_width > APP_MAX_WIDTH || selected_height > APP_MAX_HEIGHT
+//     {
+//         warn!("App | Set width or height was greater than the maximum! Starting with the default resolution...");
+//         Some(Vec2::new(APP_DEFAULT_WIDTH, APP_DEFAULT_HEIGHT))
+//     } else {
+//         Some(Vec2::new(
+//             app.state.gupax.selected_width as f32,
+//             app.state.gupax.selected_height as f32,
+//         ))
+//     };
+//     let options = init_options(initial_window_size);
 
-    // Gupax folder cleanup.
-    match clean_dir() {
-        Ok(_) => info!("Temporary folder cleanup ... OK"),
-        Err(e) => warn!("Could not cleanup [gupax_tmp] folders: {}", e),
-    }
+//     // Gupax folder cleanup.
+//     match clean_dir() {
+//         Ok(_) => info!("Temporary folder cleanup ... OK"),
+//         Err(e) => warn!("Could not cleanup [gupax_tmp] folders: {}", e),
+//     }
 
-    let resolution = Vec2::new(selected_width, selected_height);
+//     let resolution = Vec2::new(selected_width, selected_height);
 
-    // Run Gupax.
-    info!("/*************************************/ Init ... OK /*************************************/");
-    eframe::run_native(
-        &app.name_version.clone(),
-        options,
-        Box::new(move |cc| {
-            egui_extras::install_image_loaders(&cc.egui_ctx);
-            Ok(Box::new(App::cc(cc, resolution, app)))
-        }),
-    )
-    .unwrap();
+//     // Run Gupax.
+//     info!("/*************************************/ Init ... OK /*************************************/");
+//     eframe::run_native(
+//         &app.name_version.clone(),
+//         options,
+//         Box::new(move |cc| {
+//             egui_extras::install_image_loaders(&cc.egui_ctx);
+//             Ok(Box::new(App::cc(cc, resolution, app)))
+//         }),
+//     )
+//     .unwrap();
+// }
+
+const APP_ID: &str = "com.github.karce.gupaxtk";
+
+fn main() -> glib::ExitCode {
+    // Create a new application
+    let app = Application::builder().application_id(APP_ID).build();
+
+    // Connect to "activate" signal of app.
+    app.connect_activate(build_ui);
+    // Run the application
+    app.run()
+}
+
+fn build_ui(app: &Application) {
+    // Create a button with label and margins
+    let button = Button::builder()
+        .label("Press me!")
+        .margin_top(12)
+        .margin_bottom(12)
+        .margin_start(12)
+        .margin_end(12)
+        .build();
+
+    // Connect to "clicked" signal of `button`
+    button.connect_clicked(|button| {
+        // Set the label to "Hello World!" after the button has been clicked on
+        button.set_label("Hello World!");
+    });
+
+    // Create the main window
+    let window = ApplicationWindow::builder()
+        .application(app)
+        .title("Gupaxtk")
+        .child(&button)
+        .build();
+
+    window.present();
 }
